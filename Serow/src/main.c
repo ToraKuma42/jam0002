@@ -14,11 +14,6 @@
 #include "lang/regex.h"
 #include "lib/resources.h"
 
-/* Compiler global resources */
-#define GLOBAL_STRETCHY_BUFFER_LEN 512
-static char *global_stretchy_buffer = NULL;
-static int buffer_len = GLOBAL_STRETCHY_BUFFER_LEN;
-
 /**
  * Main entry point for Serow lang.
  */
@@ -33,11 +28,11 @@ main(int argc, char* argv[])
   // TODO: Compile lazy list of resources to compile
   // TODO: Iterate on list above
   // Init global resources at bootstrap
-  global_stretchy_buffer = malloc(GLOBAL_STRETCHY_BUFFER_LEN);
-  if (global_stretchy_buffer  == NULL) {
-    puts("Error! Could not allocate memory");
-    exit(1);
-  }
+  global_stretchy_buffer =
+    (char *) global_resource_alloc_default(
+      malloc(GLOBAL_STRETCHY_BUFFER_LEN * sizeof(char)),
+      "Error! Could not allocate memory"
+    );
 
   // Get file size
   FILE* resource_file =
@@ -62,6 +57,10 @@ main(int argc, char* argv[])
   // Read program into buffer
   fread(file_buffer, sizeof(char), resource_file_size, resource_file);
 
+  // Decrement to handle NULL at end of resource
+  resource_file_size--;
+
+  // Starting state of lexer
   enum lex_state_t lex_state = LEX_STATE_START;
   int word_len = 0;
   size_t line_count = 1;
@@ -148,17 +147,15 @@ main(int argc, char* argv[])
               buffer_len *= 2;
 
               if (buffer_len < old_len) {
-                puts("Error! Not enough memory for string buffer");
-                free(global_stretchy_buffer);
-                exit(1);
+                FAILED("Error! Not enough memory for string buffer");
               }
 
-              global_stretchy_buffer = realloc(global_stretchy_buffer, buffer_len);
-              if (global_stretchy_buffer == NULL) {
-                puts("Error! Memory allocation failed for string buffer");
-                free(global_stretchy_buffer);
-                exit(1);
-              }
+              global_stretchy_buffer =
+                (char *) global_resource_realloc(
+                  global_stretchy_buffer,
+                  buffer_len,
+                  "Error! Memory allocation failed for string buffer"
+                );
             }
 
             // Insert next character in buffer

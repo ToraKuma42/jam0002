@@ -44,6 +44,36 @@ global_resource_alloc_named(void *resource_item, const char *error_msg, const ch
   return resource_item;
 
 }
+
+void *
+global_resource_realloc(void *resource_item, size_t new_res_size, const char *error_msg)
+{
+  // Get old record from original pointer location
+  char success = 0;
+  int i = global_resource_count;
+  struct global_resource_t local_data;
+
+  // Backward linear probe to find old resource location
+  while (--i >= 0 && !success) {
+    local_data = global_resources[global_resource_count];
+    if (local_data.item == resource_item) {
+      global_resource_count--;
+      success = 1;
+    }
+  }
+
+  if (!success) {
+    FAILED(error_msg);
+  }
+
+  for (; i < global_resource_count; i++) {
+    global_resources[i] = global_resources[i + 1];
+  }
+
+  // Realloc according to given size
+  return global_resource_alloc(realloc(resource_item, new_res_size), error_msg, local_data.destructor);
+}
+
 /**
  * Globally effectful function to release all global resources
  * that were allocated in the program's lifetime.

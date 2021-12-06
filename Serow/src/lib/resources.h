@@ -51,14 +51,21 @@ void *global_resource_alloc_default(void *, const char *);
 void *global_resource_alloc(void *, const char *, int (*)(void *));
 void *global_resource_alloc_default_named(void *, const char *, const char *);
 void *global_resource_alloc_named(void *, const char *, const char *, int (*)(void *));
+
+void *global_resource_realloc(void *, size_t, const char *);
+
 void global_resources_cleanup();
 
+/* Static compiler global resource location */
+#define GLOBAL_STRETCHY_BUFFER_LEN 512
 static int16_t global_resource_count = 0;
+static int buffer_len = GLOBAL_STRETCHY_BUFFER_LEN;
 
 static struct global_resource_t {
   void *item;
   int (*destructor)(void *);
 } global_resources[GLOBAL_RESOURCE_LIMIT];
 
+static char *global_stretchy_buffer = NULL;
 
 #endif /* __RESOURCES_H__ */
