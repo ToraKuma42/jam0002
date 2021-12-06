@@ -4,6 +4,8 @@ The Serow language written for https://github.com/langjam/jam0002
 
 This language embraces the Plan9 regular expressions along with the ability to pattern match abstract symbol trees and time itself in a simple lambda calculus based interpreter.
 
+Sam reference card for regular expressions: http://sam.cat-v.org/cheatsheet/sam-refcard.pdf
+
 ## Basic Usage
 
 This project requires a recent version of clang to be installed (developed on 13.0.0), see https://clang.llvm.org/
@@ -11,12 +13,16 @@ Testing requires a recent version of cunit to be installed (developed on 2.1.3-3
 
 After you first check out this code make sure you run:
 
-`make all`
+`make serow`
 
  * To run tests issue the following command:
 
 `make test`
 
+ * To clean up resources, make the project and run tests issue the following command:
+
+`make clean all`
+
  * To run a script issue the following command, replacing the filename accordingly:
 
 `./serow ./test/resources/01/main.slc`
@@ -24,10 +30,10 @@ After you first check out this code make sure you run:
  * To run a script issue the following command, replacing the filename accordingly:
 
 `./serow ./test/resources/01/main.slc`
-
-Press Ctrl+C to exit.
 
 ## Future Improvements
+
+Bootstraping the compiler by writing it in Serow would be an interesting experiment as most of software is about moving data and transforming it into something else (hopefully by way of using readable patterns that are also easy to generate).
 
 REPL for more interactive development might be possible, but it is certainly not a trivial task.  Those who dare to explore this feature have been warned...
 
