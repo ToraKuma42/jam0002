@@ -26,6 +26,12 @@ enum lex_state_t {
   LEX_END,
 };
 
+struct token_t {
+  enum token_type_t type;
+  int len;
+  char data[1];
+};
+
 const unsigned char LEX_STATE_TABLE[256] = {
   // Numbers
   ['0'] = LEX_STATE_NUMBER,
@@ -107,6 +113,5 @@ const unsigned char LEX_STATE_TABLE[256] = {
   ['\t'] = LEX_STATE_WHITESPACE,
 };
 
-
-
 #endif /* __TOKENIZER_H__ */
+

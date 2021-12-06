@@ -43,6 +43,12 @@
     } \
     while (0)
 
+/* Resource structs */
+struct global_resource_t {
+  void *item;
+  int (*destructor)(void *);
+}; 
+
 /* Function declarations */
 int def_destructor(void *);
 int file_destructor(void *);
@@ -56,16 +62,25 @@ void *global_resource_realloc(void *, size_t, const char *);
 
 void global_resources_cleanup();
 
+char *double_string_buffer_size();
+char *double_token_buffer_size();
+
 /* Static compiler global resource location */
-#define GLOBAL_STRETCHY_BUFFER_LEN 512
-static int16_t global_resource_count = 0;
-static int buffer_len = GLOBAL_STRETCHY_BUFFER_LEN;
+#define GLOBAL_STRING_BUFFER_LEN 512
 
-static struct global_resource_t {
-  void *item;
-  int (*destructor)(void *);
-} global_resources[GLOBAL_RESOURCE_LIMIT];
+#define AVERAGE_TOKEN_LEN 25
+#define TOKEN_NUMBER 50
+#define GLOBAL_TOKEN_BUFFER_LEN ((AVERAGE_TOKEN_LEN) * (TOKEN_NUMBER))
 
-static char *global_stretchy_buffer = NULL;
+extern int16_t global_resource_count;
+extern int string_buffer_len;
+extern size_t token_buffer_len;
+extern size_t token_buffer_idx;
+
+static struct global_resource_t global_resources[GLOBAL_RESOURCE_LIMIT];
+
+extern char *global_string_buffer;
+extern char *global_token_buffer;
 
 #endif /* __RESOURCES_H__ */
+

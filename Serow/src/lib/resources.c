@@ -1,6 +1,6 @@
 #include "resources.h"
 
-static int16_t global_resource_count;
+static struct global_resource_t global_resources[GLOBAL_RESOURCE_LIMIT];
 
 /* Global resource function declarations */
 DECLARE_RESOURCE_DESTRUCTOR(def, free)
@@ -54,16 +54,17 @@ global_resource_realloc(void *resource_item, size_t new_res_size, const char *er
   struct global_resource_t local_data;
 
   // Backward linear probe to find old resource location
-  while (--i >= 0 && !success) {
-    local_data = global_resources[global_resource_count];
+  while (--i >= 0) {
+    local_data = global_resources[i];
     if (local_data.item == resource_item) {
       global_resource_count--;
       success = 1;
+      break;
     }
   }
 
   if (!success) {
-    FAILED(error_msg);
+    FAILED("Cannot find original resource");
   }
 
   for (; i < global_resource_count; i++) {
@@ -85,5 +86,39 @@ global_resources_cleanup()
     void *resource_item = global_resources[global_resource_count].item;
     global_resources[global_resource_count].destructor(resource_item);
   }
+}
+
+char *
+double_string_buffer_size()
+{
+  int old_len = string_buffer_len;
+  string_buffer_len *= 2;
+
+  if (string_buffer_len < old_len) {
+    FAILED("Error! Not enough memory for string buffer");
+  }
+
+  return (char *) global_resource_realloc(
+      global_string_buffer,
+      string_buffer_len,
+      "Error! Memory allocation failed for string buffer"
+    );
+}
+
+char *
+double_token_buffer_size()
+{
+  int old_len = token_buffer_len;
+  token_buffer_len *= 2;
+
+  if (token_buffer_len < old_len) {
+    FAILED("Error! Not enough memory for token buffer");
+  }
+
+  return (char *) global_resource_realloc(
+      global_token_buffer,
+      token_buffer_len,
+      "Error! Memory allocation failed for token buffer"
+    );
 }
 

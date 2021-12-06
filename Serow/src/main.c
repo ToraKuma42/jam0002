@@ -14,6 +14,14 @@
 #include "lang/regex.h"
 #include "lib/resources.h"
 
+int16_t global_resource_count = 0;
+int string_buffer_len = GLOBAL_STRING_BUFFER_LEN;
+size_t token_buffer_len = GLOBAL_TOKEN_BUFFER_LEN;
+
+char *global_string_buffer = NULL;
+char *global_token_buffer = NULL;
+size_t token_buffer_idx = 0;
+
 /**
  * Main entry point for Serow lang.
  */
@@ -28,9 +36,15 @@ main(int argc, char* argv[])
   // TODO: Compile lazy list of resources to compile
   // TODO: Iterate on list above
   // Init global resources at bootstrap
-  global_stretchy_buffer =
+  global_string_buffer =
     (char *) global_resource_alloc_default(
-      malloc(GLOBAL_STRETCHY_BUFFER_LEN * sizeof(char)),
+      malloc(GLOBAL_STRING_BUFFER_LEN * sizeof(char)),
+      "Error! Could not allocate memory"
+    );
+
+  global_token_buffer =
+    (char *) global_resource_alloc_default(
+      malloc(GLOBAL_TOKEN_BUFFER_LEN * sizeof(char)),
       "Error! Could not allocate memory"
     );
 
@@ -82,9 +96,36 @@ main(int argc, char* argv[])
         } else if (c == '\n' || c == '\r') {
           lex_state = LEX_STATE_WHITESPACE;
         } else if (c == ':') {
-          puts("Got colon");
+          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
+          if (next_idx > token_buffer_len) {
+            global_token_buffer = double_token_buffer_size();
+          }
+
+          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
+
+          token_head->type = TOKEN_COLON;
+          token_head->len = 1;
+          token_head->data[0] = ':';
+          token_head->data[1] = '\0';
+          token_buffer_idx = next_idx;
+
+          printf("Got new symbol -> %.*s\n", 1, token_head->data);
           lex_state = LEX_STATE_START;
         } else if (c == '=') {
+          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
+          if (next_idx > token_buffer_len) {
+            global_token_buffer = double_token_buffer_size();
+          }
+
+          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
+
+          token_head->type = TOKEN_EQUALS;
+          token_head->len = 1;
+          token_head->data[0] = '=';
+          token_head->data[1] = '\0';
+          token_buffer_idx = next_idx;
+
+          printf("Got new symbol -> %.*s\n", 1, token_head->data);
           puts("Got equals");
           lex_state = LEX_STATE_START;
         } else if (c == '"') {
@@ -96,14 +137,44 @@ main(int argc, char* argv[])
         i++;
         break;
       case LEX_STATE_COLON:
-        puts("Got colon");
-        lex_state = LEX_STATE_START;
-        i++;
+        {
+          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
+          if (next_idx > token_buffer_len) {
+            global_token_buffer = double_token_buffer_size();
+          }
+
+          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
+
+          token_head->type = TOKEN_COLON;
+          token_head->len = 1;
+          token_head->data[0] = ':';
+          token_head->data[1] = '\0';
+          token_buffer_idx = next_idx;
+
+          printf("Got new symbol -> %.*s\n", 1, token_head->data);
+          lex_state = LEX_STATE_START;
+          i++;
+        }
         break;
       case LEX_STATE_EQUALS:
-        puts("Got equals");
-        lex_state = LEX_STATE_START;
-        i++;
+        {
+          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
+          if (next_idx > token_buffer_len) {
+            global_token_buffer = double_token_buffer_size();
+          }
+
+          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
+
+          token_head->type = TOKEN_EQUALS;
+          token_head->len = 1;
+          token_head->data[0] = '=';
+          token_head->data[1] = '\0';
+          token_buffer_idx = next_idx;
+
+          printf("Got new symbol -> %.*s\n", 1, token_head->data);
+          lex_state = LEX_STATE_START;
+          i++;
+        }
         break;
       case LEX_STATE_NEWLINE:
         line_count++;
@@ -136,31 +207,19 @@ main(int argc, char* argv[])
         break;
       case LEX_STATE_STRING:
         {
-          int buffer_idx = 0;
+          int string_buffer_idx = 0;
           char in_backslash = 0;
           char in_string = 1;
 
           do {
             // Check if we have enough memory for global stretchy buffer
-            if (buffer_idx >= buffer_len) {
-              int old_len = buffer_len;
-              buffer_len *= 2;
-
-              if (buffer_len < old_len) {
-                FAILED("Error! Not enough memory for string buffer");
-              }
-
-              global_stretchy_buffer =
-                (char *) global_resource_realloc(
-                  global_stretchy_buffer,
-                  buffer_len,
-                  "Error! Memory allocation failed for string buffer"
-                );
+            if (string_buffer_idx >= string_buffer_len) {
+              global_string_buffer = double_string_buffer_size(); 
             }
 
             // Insert next character in buffer
             if (in_backslash) {
-              global_stretchy_buffer[buffer_idx++] = c;
+              global_string_buffer[string_buffer_idx++] = c;
               word_len++;
               c = file_buffer[++i];
               in_backslash = 0;
@@ -168,7 +227,7 @@ main(int argc, char* argv[])
             }
 
             if (c == '\\') {
-              global_stretchy_buffer[buffer_idx++] = c;
+              global_string_buffer[string_buffer_idx++] = c;
               word_len++;
               in_backslash = 1;
               i++;
@@ -181,7 +240,7 @@ main(int argc, char* argv[])
             } else if (c == 0) {
               FAILED("Error! Illegal end of string");
             } else {
-              global_stretchy_buffer[buffer_idx++] = c;
+              global_string_buffer[string_buffer_idx++] = c;
               i++;
             }
 
@@ -192,7 +251,7 @@ main(int argc, char* argv[])
             FAILED("Error! Illegal end of string");
           }
 
-          printf("Read in %.*s as potential string\n", buffer_idx, global_stretchy_buffer);
+          printf("Read in %.*s as potential string\n", string_buffer_idx, global_string_buffer);
 
           // TODO: Copy over string to separate table
           if (i < resource_file_size) {
@@ -211,3 +270,4 @@ main(int argc, char* argv[])
   global_resources_cleanup(); 
   return 0;
 }
+
