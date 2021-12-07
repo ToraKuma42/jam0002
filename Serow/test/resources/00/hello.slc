@@ -1,4 +1,4 @@
-x:pattern = "x/"kklkds
+x:pattern = "x/";
 
-
+plan: string;
 

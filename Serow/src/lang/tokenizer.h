@@ -8,9 +8,12 @@
 enum token_type_t {
    TOKEN_WORD,
    TOKEN_NUMBER,
-   TOKEN_STRING,
+   TOKEN_QUOTATION,
    TOKEN_COLON,
+   TOKEN_SEMICOLON,
    TOKEN_EQUALS,
+   TOKEN_PATTERN,
+   TOKEN_STRING,
 };
 
 enum lex_state_t {
@@ -18,7 +21,7 @@ enum lex_state_t {
   LEX_STATE_WHITESPACE,
   LEX_STATE_WORD,
   LEX_STATE_NUMBER,
-  LEX_STATE_STRING,
+  LEX_STATE_QUOTATION,
   LEX_STATE_COLON,
   LEX_STATE_EQUALS,
   LEX_STATE_NEWLINE,
@@ -32,7 +35,7 @@ struct token_t {
   char data[1];
 };
 
-const unsigned char LEX_STATE_TABLE[256] = {
+static const unsigned char LEX_STATE_TABLE[256] = {
   // Numbers
   ['0'] = LEX_STATE_NUMBER,
   ['1'] = LEX_STATE_NUMBER,
@@ -112,6 +115,8 @@ const unsigned char LEX_STATE_TABLE[256] = {
   [' '] = LEX_STATE_WHITESPACE,
   ['\t'] = LEX_STATE_WHITESPACE,
 };
+
+void create_token(enum token_type_t type, char *buffer, int len);
 
 #endif /* __TOKENIZER_H__ */
 

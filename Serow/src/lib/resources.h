@@ -69,8 +69,8 @@ char *double_token_buffer_size();
 #define GLOBAL_STRING_BUFFER_LEN 512
 
 #define AVERAGE_TOKEN_LEN 25
-#define TOKEN_NUMBER 50
-#define GLOBAL_TOKEN_BUFFER_LEN ((AVERAGE_TOKEN_LEN) * (TOKEN_NUMBER))
+#define TOKEN_COUNT 50
+#define GLOBAL_TOKEN_BUFFER_LEN ((AVERAGE_TOKEN_LEN) * (TOKEN_COUNT))
 
 extern int16_t global_resource_count;
 extern int string_buffer_len;

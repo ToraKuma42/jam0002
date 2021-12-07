@@ -83,7 +83,6 @@ main(int argc, char* argv[])
   for (int i = 0; i < resource_file_size;) {
     char c = file_buffer[i];
 
-    // TODO: Create tokens in list
     switch (lex_state) {
       case LEX_STATE_START:
       case LEX_STATE_WHITESPACE:
@@ -96,40 +95,16 @@ main(int argc, char* argv[])
         } else if (c == '\n' || c == '\r') {
           lex_state = LEX_STATE_WHITESPACE;
         } else if (c == ':') {
-          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
-          if (next_idx > token_buffer_len) {
-            global_token_buffer = double_token_buffer_size();
-          }
-
-          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
-
-          token_head->type = TOKEN_COLON;
-          token_head->len = 1;
-          token_head->data[0] = ':';
-          token_head->data[1] = '\0';
-          token_buffer_idx = next_idx;
-
-          printf("Got new symbol -> %.*s\n", 1, token_head->data);
+          create_token(TOKEN_COLON, file_buffer + i, 1);
+          lex_state = LEX_STATE_START;
+        } else if (c == ';') {
+          create_token(TOKEN_SEMICOLON, file_buffer + i, 1);
           lex_state = LEX_STATE_START;
         } else if (c == '=') {
-          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
-          if (next_idx > token_buffer_len) {
-            global_token_buffer = double_token_buffer_size();
-          }
-
-          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
-
-          token_head->type = TOKEN_EQUALS;
-          token_head->len = 1;
-          token_head->data[0] = '=';
-          token_head->data[1] = '\0';
-          token_buffer_idx = next_idx;
-
-          printf("Got new symbol -> %.*s\n", 1, token_head->data);
-          puts("Got equals");
+          create_token(TOKEN_EQUALS, file_buffer + i, 1);
           lex_state = LEX_STATE_START;
         } else if (c == '"') {
-          lex_state = LEX_STATE_STRING;
+          lex_state = LEX_STATE_QUOTATION;
         } else {
           printf("Error! Unrecognized character 0x%02x => '%c'\n", c, c);
           lex_state = LEX_STATE_START;
@@ -137,44 +112,14 @@ main(int argc, char* argv[])
         i++;
         break;
       case LEX_STATE_COLON:
-        {
-          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
-          if (next_idx > token_buffer_len) {
-            global_token_buffer = double_token_buffer_size();
-          }
-
-          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
-
-          token_head->type = TOKEN_COLON;
-          token_head->len = 1;
-          token_head->data[0] = ':';
-          token_head->data[1] = '\0';
-          token_buffer_idx = next_idx;
-
-          printf("Got new symbol -> %.*s\n", 1, token_head->data);
-          lex_state = LEX_STATE_START;
-          i++;
-        }
+        create_token(TOKEN_COLON, file_buffer + i, 1);
+        lex_state = LEX_STATE_START;
+        i++;
         break;
       case LEX_STATE_EQUALS:
-        {
-          size_t next_idx = token_buffer_idx + sizeof(struct token_t) + 1;
-          if (next_idx > token_buffer_len) {
-            global_token_buffer = double_token_buffer_size();
-          }
-
-          struct token_t *token_head = (struct token_t *) (global_token_buffer + token_buffer_idx);
-
-          token_head->type = TOKEN_EQUALS;
-          token_head->len = 1;
-          token_head->data[0] = '=';
-          token_head->data[1] = '\0';
-          token_buffer_idx = next_idx;
-
-          printf("Got new symbol -> %.*s\n", 1, token_head->data);
-          lex_state = LEX_STATE_START;
-          i++;
-        }
+        create_token(TOKEN_EQUALS, file_buffer + i, 1);
+        lex_state = LEX_STATE_START;
+        i++;
         break;
       case LEX_STATE_NEWLINE:
         line_count++;
@@ -196,16 +141,22 @@ main(int argc, char* argv[])
 
         // TODO: Check if it's keyword, function, or variable
         // TODO: Copy memory over to some kind of string table if it isn't
-        if ((word_len == 7) && strncmp("pattern", file_buffer + i - word_len, 7) == 0) {
+        char *word_ptr = file_buffer + i - word_len;
+        if ((word_len == 7) && strncmp("pattern", word_ptr, 7) == 0) {
           puts("Got 'pattern' keyword");
+          create_token(TOKEN_PATTERN, word_ptr, word_len);
+        } else if ((word_len == 6) && strncmp("string", word_ptr, 6) == 0) {
+          puts("Got 'string' keyword");
+          create_token(TOKEN_STRING, word_ptr, word_len);
         } else {
-          printf("Read in %.*s as potential var\n", word_len, file_buffer + i - word_len);
+          printf("Read in %.*s as potential var\n", word_len, word_ptr);
+          create_token(TOKEN_WORD, word_ptr, word_len);
         }
 
         word_len = 0;
         lex_state = LEX_STATE_TABLE[(unsigned char) c];
         break;
-      case LEX_STATE_STRING:
+      case LEX_STATE_QUOTATION:
         {
           int string_buffer_idx = 0;
           char in_backslash = 0;
@@ -251,9 +202,9 @@ main(int argc, char* argv[])
             FAILED("Error! Illegal end of string");
           }
 
-          printf("Read in %.*s as potential string\n", string_buffer_idx, global_string_buffer);
+          printf("Read in %.*s as potential quotation\n", string_buffer_idx, global_string_buffer);
+          create_token(TOKEN_QUOTATION, global_string_buffer, string_buffer_idx);
 
-          // TODO: Copy over string to separate table
           if (i < resource_file_size) {
             lex_state = LEX_STATE_TABLE[(unsigned char) c];
           }
