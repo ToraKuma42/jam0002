@@ -80,7 +80,7 @@ main(int argc, char* argv[])
   size_t line_count = 1;
 
   // Lexing phase
-  for (int i = 0; i < resource_file_size;) {
+  for (size_t i = 0; i < resource_file_size;) {
     char c = file_buffer[i];
 
     switch (lex_state) {
@@ -111,6 +111,11 @@ main(int argc, char* argv[])
         }
         i++;
         break;
+      case LEX_STATE_SEMICOLON:
+        create_token(TOKEN_SEMICOLON, file_buffer + i, 1);
+        lex_state = LEX_STATE_START;
+        i++;
+        break;
       case LEX_STATE_COLON:
         create_token(TOKEN_COLON, file_buffer + i, 1);
         lex_state = LEX_STATE_START;
@@ -127,11 +132,11 @@ main(int argc, char* argv[])
         lex_state = LEX_STATE_TABLE[(unsigned char) c];
         break;
       case LEX_STATE_CARRIAGE_RETURN:
+        line_count++;
         if (c == '\n') {
           c = file_buffer[++i];
         }
         lex_state = LEX_STATE_TABLE[(unsigned char) c];
-        line_count++;
         break;
       case LEX_STATE_WORD:
         while (isalnum(c) || c == '_') {
